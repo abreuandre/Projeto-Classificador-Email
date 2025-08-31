@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Classificação de Emails</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .file-input {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.produtivo {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.improdutivo {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .confidence {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            border-radius: 3px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .api-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .api-status.online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .api-status.offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Sistema de Classificação de Emails</h1>
+        
+        <div id="apiStatus" class="api-status">
+            Verificando status da API...
+        </div>
+
+        <div class="form-group">
+            <label for="emailText">Texto do Email:</label>
+            <textarea id="emailText" placeholder="Cole aqui o texto do email que deseja classificar..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Ou faça upload de um arquivo:</label>
+            <input type="file" id="emailFile" class="file-input" accept=".txt,.pdf">
+            <small>Formatos suportados: .txt, .pdf</small>
+        </div>
+
+        <div class="form-group">
+            <button onclick="classifyText()" id="classifyBtn">🔍 Classificar Email</button>
+            <button onclick="clearResults()" id="clearBtn">🗑️ Limpar</button>
+        </div>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000'; // Ajuste conforme necessário
+        
+        // Verificar status da API ao carregar a página
+        window.onload = function() {
+            checkApiStatus();
+        };
+
+        async function checkApiStatus() {
+            const statusDiv = document.getElementById('apiStatus');
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    statusDiv.textContent = '✅ API Online - Sistema funcionando normalmente';
+                    statusDiv.className = 'api-status online';
+                } else {
+                    throw new Error('API não respondeu corretamente');
+                }
+            } catch (error) {
+                statusDiv.textContent = '❌ API Offline - Verifique se o servidor está rodando';
+                statusDiv.className = 'api-status offline';
+            }
+        }
+
+        async function classifyText() {
+            const emailText = document.getElementById('emailText').value.trim();
+            const emailFile = document.getElementById('emailFile').files[0];
+            
+            if (!emailText && !emailFile) {
+                alert('Por favor, insira um texto ou selecione um arquivo para classificar.');
+                return;
+            }
+
+            const classifyBtn = document.getElementById('classifyBtn');
+            const resultDiv = document.getElementById('result');
+            
+            // Mostrar loading
+            classifyBtn.disabled = true;
+            classifyBtn.textContent = '⏳ Processando...';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading">Analisando email...</div>';
+
+            try {
+                let response;
+                
+                if (emailFile) {
+                    // Classificar arquivo
+                    const formData = new FormData();
+                    formData.append('file', emailFile);
+                    
+                    response = await fetch(`${API_BASE_URL}/classify-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Classificar texto
+                    response = await fetch(`${API_BASE_URL}/classify`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ text: emailText })
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayResult(result);
+
+            } catch (error) {
+                console.error('Erro:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Erro na classificação:</strong><br>
+                        ${error.message}<br><br>
+                        Verifique se o servidor backend está rodando em ${API_BASE_URL}
+                    </div>
+                `;
+            } finally {
+                // Restaurar botão
+                classifyBtn.disabled = false;
+                classifyBtn.textContent = '🔍 Classificar Email';
+            }
+        }
+
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            const category = result.category.toLowerCase();
+            
+            const confidencePercent = Math.round(result.confidence * 100);
+            
+            resultDiv.className = `result ${category}`;
+            resultDiv.innerHTML = `
+                <h3>📊 Resultado da Classificação</h3>
+                <p><strong>Categoria:</strong> ${result.category}</p>
+                <p><strong>Confiança:</strong> ${confidencePercent}%</p>
+                
+                <div class="confidence">
+                    <strong>Análise:</strong> ${result.reasoning}
+                </div>
+                
+                <div class="response">
+                    <strong>💬 Resposta Sugerida:</strong><br>
+                    <pre style="white-space: pre-wrap; font-family: inherit; margin-top: 10px;">${result.suggested_response}</pre>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                    <strong>Detalhes técnicos:</strong><br>
+                    • Palavras: ${result.features.word_count}<br>
+                    • Caracteres: ${result.features.char_count}<br>
+                    • Palavras-chave produtivas: ${result.features.productive_keywords}<br>
+                    • Palavras-chave improdutivas: ${result.features.unproductive_keywords}<br>
+                    • Contém pergunta: ${result.features.has_question ? 'Sim' : 'Não'}<br>
+                    • Indicadores de urgência: ${result.features.urgency_indicators}
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('emailText').value = '';
+            document.getElementById('emailFile').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        // Permitir classificação com Enter no textarea
+        document.getElementById('emailText').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                classifyText();
+            }
+        });
+    </script>
+</body>
+</html>

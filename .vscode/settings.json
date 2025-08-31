@@ -1,0 +1,11 @@
+{
+    "tailwindcss-intellisense.trace.server": "verbose",
+    "tailwindCSS.emmetCompletions": true,
+    "tailwindCSS.lint.invalidApply": "ignore",
+    "tailwindCSS.lint.invalidConfigPath": "ignore",
+    "tailwindCSS.lint.invalidScreen": "ignore",
+    "tailwindCSS.lint.invalidTailwindDirective": "ignore",
+    "tailwindCSS.lint.invalidVariant": "ignore",
+    "notebook.defaultFormatter": "vscode.css-language-features",
+    "editor.defaultFormatter": "vscode.css-language-features"
+}
