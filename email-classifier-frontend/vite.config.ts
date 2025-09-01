@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
-import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -34,9 +33,6 @@ export default defineConfig({
     // Otimizações
     minify: 'terser',
     terserOptions: {
-      format: {
-        comments: false,
-      },
       compress: {
         drop_console: true,
         drop_debugger: true
@@ -53,11 +49,11 @@ export default defineConfig({
   // Aliases de path
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
-      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
-      '@types': fileURLToPath(new URL('./src/types', import.meta.url)),
-      '@assets': fileURLToPath(new URL('./src/assets', import.meta.url))
+      '@': resolve(__dirname, 'src'),
+      '@components': resolve(__dirname, 'src/components'),
+      '@utils': resolve(__dirname, 'src/utils'),
+      '@types': resolve(__dirname, 'src/types'),
+      '@assets': resolve(__dirname, 'src/assets')
     }
   },
 
@@ -65,5 +61,12 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString())
+  },
+
+  // Configurações de teste
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts']
   }
 })

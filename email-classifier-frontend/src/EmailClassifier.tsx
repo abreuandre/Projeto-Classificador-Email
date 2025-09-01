@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { classificationService, ClassificationResult } from './services/api';
 
 // Componentes de ícones SVG inline
 const Upload = ({ className = "h-4 w-4" }) => (
@@ -50,7 +49,12 @@ const Loader = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
-// Interface já definida no serviço de API
+interface ClassificationResult {
+  category: 'Produtivo' | 'Improdutivo';
+  confidence: number;
+  suggestedResponse: string;
+  reasoning: string;
+}
 
 const EmailClassifier: React.FC = () => {
   const [emailContent, setEmailContent] = useState('');
@@ -60,14 +64,54 @@ const EmailClassifier: React.FC = () => {
   const [inputMethod, setInputMethod] = useState<'text' | 'file'>('text');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Função para classificar email usando a API real
+  // Simulação da API de classificação (substituir pela API real)
   const classifyEmail = async (content: string): Promise<ClassificationResult> => {
-    try {
-      return await classificationService.classifyText(content);
-    } catch (error) {
-      console.error('Erro na classificação:', error);
-      throw error;
+    // Simulação de processamento
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Lógica simples de classificação baseada em palavras-chave
+    const productiveKeywords = ['urgente', 'problema', 'erro', 'suporte', 'ajuda', 'dúvida', 'status', 'atualização', 'pendente', 'solicitação'];
+    const unproductiveKeywords = ['parabéns', 'feliz', 'natal', 'aniversário', 'obrigado', 'agradecimento', 'festa'];
+    
+    const contentLower = content.toLowerCase();
+    const hasProductiveKeywords = productiveKeywords.some(keyword => contentLower.includes(keyword));
+    const hasUnproductiveKeywords = unproductiveKeywords.some(keyword => contentLower.includes(keyword));
+    
+    let category: 'Produtivo' | 'Improdutivo';
+    let confidence: number;
+    let suggestedResponse: string;
+    let reasoning: string;
+    
+    if (hasProductiveKeywords && !hasUnproductiveKeywords) {
+      category = 'Produtivo';
+      confidence = 0.85;
+      suggestedResponse = 'Prezado(a), recebemos sua solicitação e nossa equipe está analisando. Retornaremos em até 24 horas úteis com uma atualização. Caso seja urgente, entre em contato pelo telefone (11) 9999-9999.';
+      reasoning = 'Email contém termos relacionados a solicitações de suporte ou problemas técnicos.';
+    } else if (hasUnproductiveKeywords && !hasProductiveKeywords) {
+      category = 'Improdutivo';
+      confidence = 0.90;
+      suggestedResponse = 'Muito obrigado pela mensagem! Desejamos tudo de bom para você também. Estamos sempre à disposição para qualquer necessidade.';
+      reasoning = 'Email contém mensagens de cortesia ou felicitações que não requerem ação específica.';
+    } else {
+      // Análise mais detalhada baseada no comprimento e estrutura
+      const wordCount = content.split(' ').length;
+      const hasQuestionMark = content.includes('?');
+      const hasRequestWords = /solicito|preciso|gostaria|poderia/.test(contentLower);
+      
+      if (wordCount > 20 && (hasQuestionMark || hasRequestWords)) {
+        category = 'Produtivo';
+        confidence = 0.75;
+        suggestedResponse = 'Prezado(a), recebemos sua mensagem e nossa equipe está analisando o conteúdo. Em breve retornaremos com as informações solicitadas.';
+        reasoning = 'Email apresenta características de solicitação formal baseado na estrutura e conteúdo.';
+      } else {
+        category = 'Improdutivo';
+        confidence = 0.70;
+        suggestedResponse = 'Obrigado pelo contato! Caso precise de alguma assistência específica, não hesite em nos informar.';
+        reasoning = 'Email não apresenta indicadores claros de necessidade de ação imediata.';
+      }
     }
+    
+    return { category, confidence, suggestedResponse, reasoning };
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,41 +119,27 @@ const EmailClassifier: React.FC = () => {
     if (selectedFile) {
       setFile(selectedFile);
       
-      // Para arquivos .txt, ler o conteúdo para preview
-      if (selectedFile.name.endsWith('.txt')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setEmailContent(content);
-        };
-        reader.readAsText(selectedFile);
-      } else {
-        setEmailContent(`Arquivo selecionado: ${selectedFile.name}`);
-      }
+      // Ler conteúdo do arquivo
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setEmailContent(content);
+      };
+      reader.readAsText(selectedFile);
     }
   };
 
   const handleSubmit = async () => {
-    if (!emailContent.trim() && !file) return;
+    if (!emailContent.trim()) return;
     
     setIsLoading(true);
     setResult(null);
     
     try {
-      let classification: ClassificationResult;
-      
-      if (file) {
-        // Classificar arquivo
-        classification = await classificationService.classifyFile(file);
-      } else {
-        // Classificar texto
-        classification = await classifyEmail(emailContent);
-      }
-      
+      const classification = await classifyEmail(emailContent);
       setResult(classification);
     } catch (error) {
       console.error('Erro na classificação:', error);
-      // Aqui você pode adicionar um toast ou notificação de erro
     } finally {
       setIsLoading(false);
     }
@@ -321,13 +351,13 @@ const EmailClassifier: React.FC = () => {
                   
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      {result.suggested_response}
+                      {result.suggestedResponse}
                     </p>
                   </div>
                   
                   <div className="flex gap-2 mt-4">
                     <button
-                      onClick={() => navigator.clipboard.writeText(result.suggested_response)}
+                      onClick={() => navigator.clipboard.writeText(result.suggestedResponse)}
                       className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Copiar Resposta

@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import EmailFetcher from './EmailFetcher';
 
 // Componentes de ícones SVG inline
 const Upload = ({ className = "h-4 w-4" }) => (
@@ -62,7 +61,7 @@ const EmailClassifier: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ClassificationResult | null>(null);
-  const [inputMethod, setInputMethod] = useState<'text' | 'file' | 'fetch'>('text');
+  const [inputMethod, setInputMethod] = useState<'text' | 'file'>('text');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Simulação da API de classificação (substituir pela API real)
@@ -155,11 +154,6 @@ const EmailClassifier: React.FC = () => {
     }
   };
 
-  const handleEmailSelect = (email: { body: string }) => {
-    setEmailContent(email.body);
-    setInputMethod('text');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
@@ -211,17 +205,6 @@ const EmailClassifier: React.FC = () => {
                   <Upload className="h-4 w-4 inline mr-2" />
                   Upload Arquivo
                 </button>
-                <button
-                  onClick={() => setInputMethod('fetch')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                    inputMethod === 'fetch'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Mail className="h-4 w-4 inline mr-2" />
-                  Buscar Emails
-                </button>
               </div>
 
               {inputMethod === 'text' ? (
@@ -236,7 +219,7 @@ const EmailClassifier: React.FC = () => {
                     className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   />
                 </div>
-              ) : inputMethod === 'file' ? (
+              ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Arquivo de Email
@@ -261,8 +244,6 @@ const EmailClassifier: React.FC = () => {
                     className="hidden"
                   />
                 </div>
-              ) : (
-                <EmailFetcher onEmailSelect={handleEmailSelect} />
               )}
 
               <div className="flex gap-3 mt-6">
@@ -388,93 +369,6 @@ const EmailClassifier: React.FC = () => {
                 </div>
               </>
             )}
-
-            {/* Email Examples */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Exemplos para Teste</h3>
-              <p className="text-sm text-gray-600 mb-4">Clique em um exemplo para testar a classificação:</p>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setEmailContent(`De: suporte@empresa.com
-Para: andre_machado92@hotmail.com
-Assunto: Problema com login no sistema
-
-Olá André,
-
-Estou enfrentando um problema para fazer login no sistema da empresa. Quando tento acessar, aparece a mensagem "Usuário ou senha inválidos". Já tentei resetar a senha, mas não consigo resolver.
-
-Você poderia me ajudar com isso? É urgente pois preciso acessar alguns relatórios hoje.
-
-Obrigado,
-João Silva`)}
-                  className="w-full text-left p-3 bg-white rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-colors"
-                >
-                  <div className="font-medium text-gray-900">Email Produtivo - Problema Técnico</div>
-                  <div className="text-xs text-gray-600 mt-1">Solicitação de suporte com urgência</div>
-                </button>
-                
-                <button
-                  onClick={() => setEmailContent(`De: maria@empresa.com
-Para: andre_machado92@hotmail.com
-Assunto: Feliz Aniversário!
-
-Oi André,
-
-Parabéns pelo seu aniversário! 🎉
-
-Desejo que você tenha um dia muito especial, repleto de alegria e realizações. Que este novo ano de vida traga muitas conquistas e momentos felizes.
-
-Um abraço,
-Maria`)}
-                  className="w-full text-left p-3 bg-white rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-colors"
-                >
-                  <div className="font-medium text-gray-900">Email Improdutivo - Felicitações</div>
-                  <div className="text-xs text-gray-600 mt-1">Mensagem de aniversário</div>
-                </button>
-                
-                <button
-                  onClick={() => setEmailContent(`De: cliente@empresa.com
-Para: andre_machado92@hotmail.com
-Assunto: Solicitação de orçamento
-
-Prezado André,
-
-Gostaria de solicitar um orçamento para implementação de um sistema de gestão para nossa empresa. Temos aproximadamente 50 funcionários e precisamos de um sistema que inclua:
-
-- Controle de estoque
-- Gestão de vendas
-- Relatórios gerenciais
-- Integração com sistemas fiscais
-
-Você poderia me enviar uma proposta detalhada com prazos e valores?
-
-Aguardo retorno,
-Carlos Santos
-Empresa ABC Ltda`)}
-                  className="w-full text-left p-3 bg-white rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-colors"
-                >
-                  <div className="font-medium text-gray-900">Email Produtivo - Solicitação Comercial</div>
-                  <div className="text-xs text-gray-600 mt-1">Pedido de orçamento detalhado</div>
-                </button>
-                
-                <button
-                  onClick={() => setEmailContent(`De: colega@empresa.com
-Para: andre_machado92@hotmail.com
-Assunto: Obrigado pela ajuda
-
-Oi André,
-
-Só queria agradecer pela ajuda que você me deu ontem com aquele problema no sistema. Você foi muito prestativo e conseguiu resolver tudo rapidamente.
-
-Muito obrigado mesmo!
-Ana`)}
-                  className="w-full text-left p-3 bg-white rounded-lg border border-green-200 hover:border-green-300 hover:bg-green-50 transition-colors"
-                >
-                  <div className="font-medium text-gray-900">Email Improdutivo - Agradecimento</div>
-                  <div className="text-xs text-gray-600 mt-1">Mensagem de agradecimento</div>
-                </button>
-              </div>
-            </div>
 
             {/* Instructions */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-6">
